@@ -1,0 +1,1409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Room Chat - Premium Web App</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-hover: #4f46e5;
+            --bg-dark: #0f172a;
+            --card-bg-dark: rgba(30, 41, 59, 0.7);
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border-glass: rgba(255, 255, 255, 0.1);
+            --msg-own: #6366f1;
+            --msg-other: rgba(51, 65, 85, 0.8);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, var(--bg-dark), #000000);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        .app-container {
+            width: 100%;
+            max-width: 1200px;
+            height: 100vh;
+            background: var(--card-bg-dark);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--border-glass);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow: hidden;
+        }
+
+        @media (min-width: 768px) {
+            .app-container {
+                height: 90vh;
+                border-radius: 24px;
+                box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            }
+        }
+
+        .screen {
+            display: none;
+            width: 100%;
+            height: 100%;
+            flex-direction: column;
+            animation: fadeIn 0.4s ease forwards;
+        }
+
+        .screen.active {
+            display: flex;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        button {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        button:hover {
+            background: var(--primary-hover);
+            transform: scale(1.02);
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        input {
+            width: 100%;
+            padding: 14px 20px;
+            border-radius: 12px;
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--border-glass);
+            color: white;
+            font-size: 1rem;
+            outline: none;
+            transition: border 0.2s;
+        }
+
+        input:focus {
+            border-color: var(--primary);
+        }
+
+        input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .input-group {
+            position: relative;
+            width: 100%;
+            margin-bottom: 15px;
+        }
+
+        .input-group input {
+            padding-right: 45px;
+        }
+
+        .input-group .toggle-password {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: transparent;
+            color: var(--text-muted);
+            padding: 5px;
+            width: auto;
+            font-size: 1.1rem;
+            border: none;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .input-group .toggle-password:hover {
+            color: white;
+            transform: translateY(-50%) scale(1.1);
+            background: transparent;
+        }
+
+        #login-screen {
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .login-card {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 40px;
+            border-radius: 20px;
+            border: 1px solid var(--border-glass);
+            max-width: 420px;
+            width: 100%;
+        }
+
+        .login-card h1 { 
+            margin-bottom: 5px; 
+            font-size: 2rem; 
+        }
+        .login-card .subtitle { 
+            color: var(--text-muted); 
+            margin-bottom: 25px; 
+            font-size: 0.9rem;
+        }
+
+        .login-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 25px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 12px;
+            padding: 5px;
+        }
+
+        .login-tabs button {
+            flex: 1;
+            padding: 10px;
+            background: transparent;
+            border-radius: 8px;
+            font-size: 0.95rem;
+        }
+
+        .login-tabs button.active {
+            background: var(--primary);
+        }
+
+        .login-tabs button:hover {
+            background: transparent;
+            transform: none;
+        }
+
+        .login-tabs button.active:hover {
+            background: var(--primary);
+        }
+
+        .login-form {
+            display: none;
+        }
+
+        .login-form.active {
+            display: block;
+            animation: fadeIn 0.3s ease forwards;
+        }
+
+        .login-form .form-group {
+            margin-bottom: 15px;
+            text-align: left;
+        }
+
+        .login-form .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+
+        .login-form .form-btn {
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .switch-mode {
+            margin-top: 15px;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .switch-mode a {
+            color: var(--primary);
+            cursor: pointer;
+            text-decoration: none;
+        }
+
+        .switch-mode a:hover {
+            text-decoration: underline;
+        }
+
+        .google-divider {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin: 20px 0;
+            color: var(--text-muted);
+        }
+
+        .google-divider::before,
+        .google-divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border-glass);
+        }
+
+        .btn-google {
+            background: white;
+            color: #333;
+            width: 100%;
+        }
+        .btn-google:hover { 
+            background: #f8f9fa; 
+        }
+
+        #home-screen { 
+            padding: 30px; 
+            overflow-y: auto; 
+        }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border-glass);
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .user-mini-profile {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            padding: 5px 10px;
+            border-radius: 30px;
+            transition: background 0.2s;
+        }
+
+        .user-mini-profile:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .user-mini-profile img {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            border: 2px solid var(--primary);
+            object-fit: cover;
+        }
+
+        .action-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        .action-card {
+            background: rgba(255, 255, 255, 0.03);
+            padding: 30px;
+            border-radius: 20px;
+            border: 1px solid var(--border-glass);
+            text-align: center;
+        }
+
+        .action-card h3 { 
+            margin-bottom: 20px; 
+        }
+
+        .action-card p {
+            color: var(--text-muted); 
+            margin-bottom: 20px; 
+            font-size: 0.9rem;
+        }
+
+        .room-header {
+            padding: 15px 20px;
+            background: rgba(0, 0, 0, 0.2);
+            border-bottom: 1px solid var(--border-glass);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        .room-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .room-info h2 { 
+            font-size: 1.2rem; 
+            display: flex; 
+            align-items: center; 
+            gap: 10px; 
+        }
+        
+        .room-code-badge { 
+            background: var(--primary); 
+            padding: 4px 10px; 
+            border-radius: 8px; 
+            font-size: 0.9rem;
+            font-weight: 600;
+            letter-spacing: 1px;
+        }
+        
+        .chat-area {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            min-height: 0;
+        }
+
+        .message {
+            display: flex;
+            gap: 12px;
+            max-width: 85%;
+            animation: fadeIn 0.3s ease forwards;
+        }
+
+        .message.own {
+            align-self: flex-end;
+            flex-direction: row-reverse;
+        }
+
+        .message img.avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            object-fit: cover;
+            flex-shrink: 0;
+        }
+
+        .msg-content {
+            background: var(--msg-other);
+            padding: 12px 16px;
+            border-radius: 16px;
+            border-top-left-radius: 4px;
+            position: relative;
+            word-break: break-word;
+            max-width: 100%;
+        }
+
+        .message.own .msg-content {
+            background: var(--msg-own);
+            border-top-left-radius: 16px;
+            border-top-right-radius: 4px;
+        }
+
+        .msg-sender { 
+            font-size: 0.8rem; 
+            color: var(--text-muted); 
+            margin-bottom: 4px; 
+            font-weight: 600;
+        }
+        .message.own .msg-sender { 
+            display: none; 
+        }
+        .msg-text { 
+            font-size: 0.95rem; 
+            line-height: 1.4; 
+        }
+        .msg-image { 
+            max-width: 250px; 
+            max-height: 300px;
+            border-radius: 8px; 
+            margin-top: 8px; 
+            display: none; 
+            width: 100%;
+            object-fit: cover;
+            cursor: pointer;
+        }
+        .msg-image[src] { 
+            display: block; 
+        }
+        .msg-time { 
+            font-size: 0.7rem; 
+            color: rgba(255,255,255,0.5); 
+            text-align: right; 
+            margin-top: 6px; 
+        }
+
+        .chat-input-area {
+            padding: 15px 20px;
+            background: rgba(0, 0, 0, 0.3);
+            border-top: 1px solid var(--border-glass);
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        .chat-input-area input[type="text"] { 
+            flex: 1; 
+        }
+        
+        .icon-btn { 
+            padding: 12px; 
+            border-radius: 50%; 
+            width: 46px; 
+            height: 46px; 
+            background: rgba(255,255,255,0.1);
+            flex-shrink: 0;
+        }
+        
+        .icon-btn:hover {
+            background: var(--primary);
+        }
+
+        #image-upload-input { 
+            display: none; 
+        }
+
+        #profile-screen { 
+            padding: 30px; 
+            align-items: center; 
+            justify-content: center;
+        }
+        
+        .profile-card {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 40px;
+            border-radius: 20px;
+            border: 1px solid var(--border-glass);
+            text-align: center;
+            width: 100%;
+            max-width: 400px;
+        }
+        .profile-card img { 
+            width: 100px; 
+            height: 100px; 
+            border-radius: 50%; 
+            margin-bottom: 15px; 
+            border: 3px solid var(--primary);
+            object-fit: cover;
+        }
+        .profile-card h2 { 
+            margin-bottom: 5px; 
+        }
+        .profile-card p { 
+            color: var(--text-muted); 
+            margin-bottom: 25px; 
+            font-size: 0.9rem;
+        }
+
+        #image-preview-overlay {
+            display: none; 
+            position: absolute; 
+            bottom: 80px; 
+            left: 20px; 
+            right: 20px;
+            background: var(--card-bg-dark); 
+            padding: 10px; 
+            border-radius: 12px;
+            border: 1px solid var(--border-glass); 
+            z-index: 10; 
+            align-items: center; 
+            justify-content: space-between;
+            backdrop-filter: blur(20px);
+        }
+        
+        #preview-img { 
+            height: 60px; 
+            border-radius: 8px; 
+            object-fit: cover;
+        }
+        
+        .close-preview { 
+            background: transparent; 
+            color: white; 
+            padding: 5px; 
+        }
+        .close-preview:hover {
+            background: transparent;
+            transform: scale(1.1);
+        }
+
+        .back-btn {
+            background: transparent;
+            padding: 10px 15px;
+            margin-bottom: 15px;
+            align-self: flex-start;
+        }
+        .back-btn:hover {
+            background: rgba(255,255,255,0.05);
+            transform: none;
+        }
+
+        ::-webkit-scrollbar { 
+            width: 6px; 
+        }
+        ::-webkit-scrollbar-track { 
+            background: transparent; 
+        }
+        ::-webkit-scrollbar-thumb { 
+            background: rgba(255,255,255,0.2); 
+            border-radius: 10px; 
+        }
+
+        .loading-spinner { 
+            animation: spin 1s linear infinite; 
+        }
+        @keyframes spin { 
+            100% { transform: rotate(360deg); } 
+        }
+
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: var(--text-muted);
+            gap: 15px;
+        }
+
+        .empty-state i {
+            font-size: 3rem;
+            opacity: 0.3;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 12px;
+            z-index: 1000;
+            display: none;
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--border-glass);
+            font-size: 0.9rem;
+            max-width: 90%;
+            text-align: center;
+        }
+
+        .toast.show {
+            display: block;
+            animation: fadeIn 0.3s ease forwards;
+        }
+
+        .error-text {
+            color: #ef4444;
+            font-size: 0.85rem;
+            margin-top: 5px;
+            display: none;
+        }
+
+        .error-text.show {
+            display: block;
+        }
+
+        @media (max-width: 480px) {
+            .login-card {
+                padding: 25px;
+            }
+            .login-card h1 {
+                font-size: 1.5rem;
+            }
+            .action-card {
+                padding: 20px;
+            }
+            .room-header {
+                padding: 10px 15px;
+            }
+            .room-info h2 {
+                font-size: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container" id="app">
+        
+        <div id="login-screen" class="screen active">
+            <div class="login-card">
+                <i class="fa-solid fa-comments" style="font-size: 2.5rem; color: var(--primary); margin-bottom: 10px;"></i>
+                <h1>Nexus Chat</h1>
+                <p class="subtitle">Secure real-time messaging</p>
+
+                <div class="login-tabs">
+                    <button class="active" data-tab="login">Login</button>
+                    <button data-tab="register">Register</button>
+                </div>
+
+                <!-- Login Form -->
+                <div class="login-form active" id="login-form">
+                    <div class="form-group">
+                        <label>Email Address</label>
+                        <input type="email" id="login-email" placeholder="your@email.com" autocomplete="email">
+                    </div>
+                    <div class="form-group">
+                        <label>Password</label>
+                        <div class="input-group">
+                            <input type="password" id="login-password" placeholder="Enter password" autocomplete="current-password">
+                            <button class="toggle-password" type="button" onclick="togglePassword('login-password', this)">
+                                <i class="fa-regular fa-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="error-text" id="login-error"></div>
+                    <button class="form-btn" id="btn-login-email">
+                        <i class="fa-solid fa-arrow-right-to-bracket"></i> Login
+                    </button>
+                    <div class="switch-mode">
+                        Don't have an account? <a onclick="switchTab('register')">Register here</a>
+                    </div>
+                </div>
+
+                <!-- Register Form -->
+                <div class="login-form" id="register-form">
+                    <div class="form-group">
+                        <label>Full Name</label>
+                        <input type="text" id="register-name" placeholder="John Doe" autocomplete="name">
+                    </div>
+                    <div class="form-group">
+                        <label>Email Address</label>
+                        <input type="email" id="register-email" placeholder="your@email.com" autocomplete="email">
+                    </div>
+                    <div class="form-group">
+                        <label>Password</label>
+                        <div class="input-group">
+                            <input type="password" id="register-password" placeholder="Min 6 characters" autocomplete="new-password">
+                            <button class="toggle-password" type="button" onclick="togglePassword('register-password', this)">
+                                <i class="fa-regular fa-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Confirm Password</label>
+                        <div class="input-group">
+                            <input type="password" id="register-confirm-password" placeholder="Confirm password" autocomplete="new-password">
+                            <button class="toggle-password" type="button" onclick="togglePassword('register-confirm-password', this)">
+                                <i class="fa-regular fa-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="error-text" id="register-error"></div>
+                    <button class="form-btn" id="btn-register">
+                        <i class="fa-solid fa-user-plus"></i> Create Account
+                    </button>
+                    <div class="switch-mode">
+                        Already have an account? <a onclick="switchTab('login')">Login here</a>
+                    </div>
+                </div>
+
+                <div class="google-divider">
+                    <span>or continue with</span>
+                </div>
+
+                <button class="btn-google" id="btn-login-google">
+                    <i class="fa-brands fa-google"></i> Continue with Google
+                </button>
+            </div>
+        </div>
+
+        <div id="home-screen" class="screen">
+            <div class="header">
+                <h2>Dashboard</h2>
+                <div class="user-mini-profile" id="btn-open-profile">
+                    <span id="home-user-name">User</span>
+                    <img id="home-user-photo" src="" alt="Profile">
+                </div>
+            </div>
+
+            <div class="action-grid">
+                <div class="action-card">
+                    <h3>Create a Room</h3>
+                    <p>Generate a unique code to invite others.</p>
+                    <button id="btn-create-room" style="width: 100%;">
+                        <i class="fa-solid fa-plus"></i> Create New Room
+                    </button>
+                </div>
+
+                <div class="action-card">
+                    <h3>Join a Room</h3>
+                    <div style="display: flex; gap: 10px; margin-top: 10px;">
+                        <input type="text" id="join-room-code" placeholder="Enter 6-digit code" maxlength="6" style="text-transform: uppercase;">
+                        <button id="btn-join-room" style="padding: 12px 20px;">
+                            <i class="fa-solid fa-arrow-right"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="room-screen" class="screen">
+            <div class="room-header">
+                <div class="room-info">
+                    <button id="btn-leave-room" style="background: transparent; padding: 8px;">
+                        <i class="fa-solid fa-arrow-left"></i>
+                    </button>
+                    <h2>Room <span class="room-code-badge" id="display-room-code">------</span></h2>
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <button id="btn-copy-code" style="background: transparent; padding: 8px;" title="Copy Code">
+                        <i class="fa-regular fa-copy"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="chat-area" id="chat-messages">
+                <div class="empty-state">
+                    <i class="fa-regular fa-comment-dots"></i>
+                    <p>No messages yet. Say hello!</p>
+                </div>
+            </div>
+
+            <div id="image-preview-overlay">
+                <div style="display: flex; align-items: center; gap: 15px; overflow: hidden;">
+                    <img id="preview-img" src="" alt="Preview">
+                    <span id="preview-name" style="font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">image.png</span>
+                </div>
+                <button class="close-preview" id="btn-cancel-upload">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="chat-input-area">
+                <input type="file" id="image-upload-input" accept="image/*">
+                <button class="icon-btn" id="btn-trigger-upload" title="Upload Image">
+                    <i class="fa-solid fa-image"></i>
+                </button>
+                <input type="text" id="message-input" placeholder="Type a message..." autocomplete="off">
+                <button class="icon-btn" id="btn-send-msg" title="Send Message">
+                    <i class="fa-solid fa-paper-plane"></i>
+                </button>
+            </div>
+        </div>
+
+        <div id="profile-screen" class="screen">
+            <button id="btn-back-home" class="back-btn">
+                <i class="fa-solid fa-arrow-left"></i> Back
+            </button>
+            <div class="profile-card">
+                <img id="profile-photo" src="" alt="Profile">
+                <h2 id="profile-name">Name</h2>
+                <p id="profile-email">email@example.com</p>
+                <p style="font-size: 0.7rem; color: rgba(255,255,255,0.3); margin-bottom: 20px; word-break: break-all;">
+                    UID: <span id="profile-uid"></span>
+                </p>
+                <button id="btn-logout" style="width: 100%; background: #ef4444;">
+                    <i class="fa-solid fa-right-from-bracket"></i> Logout
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Toast Notification -->
+    <div class="toast" id="toast"></div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-analytics.js";
+        import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js";
+        import { getFirestore, collection, doc, setDoc, getDoc, addDoc, query, orderBy, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
+        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-storage.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCkNqoGvvIhWivgC_P9PDUvEQ0VS5N6SI0",
+            authDomain: "photography-9628b.firebaseapp.com",
+            databaseURL: "https://photography-9628b-default-rtdb.firebaseio.com",
+            projectId: "photography-9628b",
+            storageBucket: "photography-9628b.firebasestorage.app",
+            messagingSenderId: "829346814544",
+            appId: "1:829346814544:web:1f9ee0722dfa83fef44f55",
+            measurementId: "G-SS4PHCW2PK"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const analytics = getAnalytics(app);
+        const auth = getAuth(app);
+        const provider = new GoogleAuthProvider();
+        const db = getFirestore(app);
+        const storage = getStorage(app);
+
+        let currentUser = null;
+        let currentRoomCode = null;
+        let unsubscribeMessages = null;
+        let pendingImageFile = null;
+        let isSending = false;
+
+        // Toast function
+        function showToast(message, duration = 3000) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.add('show');
+            clearTimeout(toast._timeout);
+            toast._timeout = setTimeout(() => {
+                toast.classList.remove('show');
+            }, duration);
+        }
+
+        // Toggle Password Visibility (Global function for onclick)
+        window.togglePassword = function(inputId, btn) {
+            const input = document.getElementById(inputId);
+            if (input.type === 'password') {
+                input.type = 'text';
+                btn.innerHTML = '<i class="fa-regular fa-eye-slash"></i>';
+            } else {
+                input.type = 'password';
+                btn.innerHTML = '<i class="fa-regular fa-eye"></i>';
+            }
+        };
+
+        // Switch tabs
+        window.switchTab = function(tab) {
+            document.querySelectorAll('.login-tabs button').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.tab === tab);
+            });
+            document.querySelectorAll('.login-form').forEach(form => {
+                form.classList.toggle('active', form.id === tab + '-form');
+            });
+            // Clear errors
+            document.getElementById('login-error').classList.remove('show');
+            document.getElementById('register-error').classList.remove('show');
+        };
+
+        // Tab switching
+        document.querySelectorAll('.login-tabs button').forEach(btn => {
+            btn.addEventListener('click', () => {
+                switchTab(btn.dataset.tab);
+            });
+        });
+
+        // DOM Elements
+        const screens = {
+            login: document.getElementById('login-screen'),
+            home: document.getElementById('home-screen'),
+            room: document.getElementById('room-screen'),
+            profile: document.getElementById('profile-screen')
+        };
+
+        const switchScreen = (screenName) => {
+            Object.values(screens).forEach(s => s.classList.remove('active'));
+            screens[screenName].classList.add('active');
+        };
+
+        // Auth State
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                currentUser = user;
+                updateUserUI(user);
+                if (!currentRoomCode) {
+                    switchScreen('home');
+                }
+            } else {
+                currentUser = null;
+                if (unsubscribeMessages) {
+                    unsubscribeMessages();
+                    unsubscribeMessages = null;
+                }
+                currentRoomCode = null;
+                switchScreen('login');
+            }
+        });
+
+        function updateUserUI(user) {
+            const displayName = user.displayName || 'User';
+            const photoURL = user.photoURL || `https://ui-avatars.com/api/?background=6366f1&color=fff&name=${displayName}`;
+            
+            document.getElementById('home-user-name').textContent = displayName.split(' ')[0];
+            document.getElementById('home-user-photo').src = photoURL;
+            document.getElementById('profile-name').textContent = displayName;
+            document.getElementById('profile-email').textContent = user.email || 'No email';
+            document.getElementById('profile-photo').src = photoURL;
+            document.getElementById('profile-uid').textContent = user.uid;
+        }
+
+        // Google Login
+        document.getElementById('btn-login-google').addEventListener('click', async () => {
+            try {
+                await signInWithPopup(auth, provider);
+                showToast('Welcome! 🎉');
+            } catch (error) {
+                console.error("Login failed", error);
+                showToast('Login failed. Please try again.');
+            }
+        });
+
+        // Email Login
+        document.getElementById('btn-login-email').addEventListener('click', async () => {
+            const email = document.getElementById('login-email').value.trim();
+            const password = document.getElementById('login-password').value;
+            const errorEl = document.getElementById('login-error');
+
+            if (!email || !password) {
+                errorEl.textContent = 'Please fill in all fields';
+                errorEl.classList.add('show');
+                return;
+            }
+
+            try {
+                errorEl.classList.remove('show');
+                const btn = document.getElementById('btn-login-email');
+                btn.innerHTML = '<i class="fa-solid fa-spinner loading-spinner"></i> Logging in...';
+                btn.disabled = true;
+
+                await signInWithEmailAndPassword(auth, email, password);
+                showToast('Welcome back! 👋');
+                
+                btn.innerHTML = '<i class="fa-solid fa-arrow-right-to-bracket"></i> Login';
+                btn.disabled = false;
+            } catch (error) {
+                console.error("Login error:", error);
+                errorEl.textContent = error.message || 'Login failed. Please try again.';
+                errorEl.classList.add('show');
+                document.getElementById('btn-login-email').innerHTML = '<i class="fa-solid fa-arrow-right-to-bracket"></i> Login';
+                document.getElementById('btn-login-email').disabled = false;
+            }
+        });
+
+        // Register
+        document.getElementById('btn-register').addEventListener('click', async () => {
+            const name = document.getElementById('register-name').value.trim();
+            const email = document.getElementById('register-email').value.trim();
+            const password = document.getElementById('register-password').value;
+            const confirmPassword = document.getElementById('register-confirm-password').value;
+            const errorEl = document.getElementById('register-error');
+
+            if (!name || !email || !password || !confirmPassword) {
+                errorEl.textContent = 'Please fill in all fields';
+                errorEl.classList.add('show');
+                return;
+            }
+
+            if (password.length < 6) {
+                errorEl.textContent = 'Password must be at least 6 characters';
+                errorEl.classList.add('show');
+                return;
+            }
+
+            if (password !== confirmPassword) {
+                errorEl.textContent = 'Passwords do not match';
+                errorEl.classList.add('show');
+                return;
+            }
+
+            try {
+                errorEl.classList.remove('show');
+                const btn = document.getElementById('btn-register');
+                btn.innerHTML = '<i class="fa-solid fa-spinner loading-spinner"></i> Creating account...';
+                btn.disabled = true;
+
+                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                
+                // Update profile with name
+                await updateProfile(userCredential.user, {
+                    displayName: name,
+                    photoURL: `https://ui-avatars.com/api/?background=6366f1&color=fff&name=${name}`
+                });
+
+                showToast('Account created successfully! 🎉');
+                
+                btn.innerHTML = '<i class="fa-solid fa-user-plus"></i> Create Account';
+                btn.disabled = false;
+
+                // Clear register form
+                document.getElementById('register-name').value = '';
+                document.getElementById('register-email').value = '';
+                document.getElementById('register-password').value = '';
+                document.getElementById('register-confirm-password').value = '';
+
+            } catch (error) {
+                console.error("Registration error:", error);
+                errorEl.textContent = error.message || 'Registration failed. Please try again.';
+                errorEl.classList.add('show');
+                document.getElementById('btn-register').innerHTML = '<i class="fa-solid fa-user-plus"></i> Create Account';
+                document.getElementById('btn-register').disabled = false;
+            }
+        });
+
+        // Logout
+        document.getElementById('btn-logout').addEventListener('click', async () => {
+            try {
+                if (unsubscribeMessages) {
+                    unsubscribeMessages();
+                    unsubscribeMessages = null;
+                }
+                currentRoomCode = null;
+                await signOut(auth);
+                showToast('Logged out successfully');
+            } catch (error) {
+                console.error("Logout failed", error);
+                showToast('Logout failed');
+            }
+        });
+
+        // Navigation
+        document.getElementById('btn-open-profile').addEventListener('click', () => {
+            if (currentUser) {
+                updateUserUI(currentUser);
+                switchScreen('profile');
+            }
+        });
+        
+        document.getElementById('btn-back-home').addEventListener('click', () => {
+            switchScreen('home');
+        });
+
+        // Enter key support for login/register
+        document.getElementById('login-password').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') document.getElementById('btn-login-email').click();
+        });
+        document.getElementById('login-email').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') document.getElementById('btn-login-email').click();
+        });
+        document.getElementById('register-confirm-password').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') document.getElementById('btn-register').click();
+        });
+
+        // Room Code Generation
+        function generateRoomCode() {
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+            let code = '';
+            for (let i = 0; i < 6; i++) {
+                code += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return code;
+        }
+
+        // Create Room
+        document.getElementById('btn-create-room').addEventListener('click', async (e) => {
+            const btn = e.currentTarget;
+            btn.innerHTML = '<i class="fa-solid fa-spinner loading-spinner"></i> Creating...';
+            btn.disabled = true;
+
+            try {
+                let code;
+                let exists = true;
+                let attempts = 0;
+                
+                while (exists && attempts < 10) {
+                    code = generateRoomCode();
+                    const docSnap = await getDoc(doc(db, "rooms", code));
+                    exists = docSnap.exists();
+                    attempts++;
+                }
+
+                if (attempts >= 10) {
+                    throw new Error('Failed to generate unique code');
+                }
+
+                await setDoc(doc(db, "rooms", code), {
+                    createdAt: serverTimestamp(),
+                    creatorId: currentUser.uid,
+                    creatorName: currentUser.displayName || 'Anonymous',
+                    isActive: true
+                });
+
+                await enterRoom(code);
+                showToast(`Room created! Code: ${code}`);
+            } catch (error) {
+                console.error("Error creating room:", error);
+                showToast('Failed to create room. Please try again.');
+            } finally {
+                btn.innerHTML = '<i class="fa-solid fa-plus"></i> Create New Room';
+                btn.disabled = false;
+            }
+        });
+
+        // Join Room
+        document.getElementById('btn-join-room').addEventListener('click', async () => {
+            const input = document.getElementById('join-room-code');
+            const code = input.value.trim().toUpperCase();
+            
+            if (code.length !== 6) {
+                showToast('Please enter a valid 6-character room code.');
+                return;
+            }
+
+            try {
+                const docSnap = await getDoc(doc(db, "rooms", code));
+                if (docSnap.exists()) {
+                    await enterRoom(code);
+                    input.value = '';
+                    showToast(`Joined room: ${code}`);
+                } else {
+                    showToast('Room not found. Please check the code.');
+                }
+            } catch (error) {
+                console.error("Error joining room:", error);
+                showToast('Failed to join room.');
+            }
+        });
+
+        // Enter Room
+        const enterRoom = async (code) => {
+            currentRoomCode = code;
+            document.getElementById('display-room-code').textContent = code;
+            
+            const chatArea = document.getElementById('chat-messages');
+            chatArea.innerHTML = '<div class="empty-state"><i class="fa-regular fa-comment-dots"></i><p>Loading messages...</p></div>';
+            
+            switchScreen('room');
+
+            if (unsubscribeMessages) {
+                unsubscribeMessages();
+                unsubscribeMessages = null;
+            }
+
+            const messagesRef = collection(db, "rooms", code, "messages");
+            const q = query(messagesRef, orderBy("timestamp", "asc"));
+            
+            let isFirstLoad = true;
+
+            unsubscribeMessages = onSnapshot(q, (snapshot) => {
+                const chatArea = document.getElementById('chat-messages');
+                
+                if (snapshot.empty && isFirstLoad) {
+                    chatArea.innerHTML = '<div class="empty-state"><i class="fa-regular fa-comment-dots"></i><p>No messages yet. Say hello!</p></div>';
+                    isFirstLoad = false;
+                    return;
+                }
+                
+                isFirstLoad = false;
+                chatArea.innerHTML = '';
+                snapshot.forEach((doc) => {
+                    const data = doc.data();
+                    const isOwn = data.uid === currentUser?.uid;
+                    const msgDiv = createMessageElement(data, isOwn);
+                    chatArea.appendChild(msgDiv);
+                });
+
+                chatArea.scrollTop = chatArea.scrollHeight;
+            }, (error) => {
+                console.error("Error listening to messages:", error);
+                showToast('Error loading messages');
+            });
+        };
+
+        // Create Message Element
+        function createMessageElement(data, isOwn) {
+            const msgDiv = document.createElement('div');
+            msgDiv.className = `message ${isOwn ? 'own' : ''}`;
+            
+            const avatar = document.createElement('img');
+            avatar.className = 'avatar';
+            avatar.src = data.photoURL || `https://ui-avatars.com/api/?background=6366f1&color=fff&name=${data.displayName || 'U'}`;
+            avatar.alt = data.displayName || 'User';
+            avatar.loading = 'lazy';
+
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'msg-content';
+            
+            if (!isOwn && data.displayName) {
+                const sender = document.createElement('div');
+                sender.className = 'msg-sender';
+                sender.textContent = data.displayName;
+                contentDiv.appendChild(sender);
+            }
+
+            if (data.text) {
+                const text = document.createElement('div');
+                text.className = 'msg-text';
+                text.textContent = data.text;
+                contentDiv.appendChild(text);
+            }
+
+            if (data.imageURL) {
+                const img = document.createElement('img');
+                img.className = 'msg-image';
+                img.src = data.imageURL;
+                img.alt = 'Shared image';
+                img.loading = 'lazy';
+                img.onclick = () => window.open(data.imageURL, '_blank');
+                contentDiv.appendChild(img);
+            }
+
+            const time = document.createElement('div');
+            time.className = 'msg-time';
+            if (data.timestamp) {
+                const date = data.timestamp.toDate ? data.timestamp.toDate() : new Date(data.timestamp);
+                time.textContent = date.toLocaleTimeString([], { 
+                    hour: '2-digit', 
+                    minute: '2-digit',
+                    hour12: true 
+                });
+            } else {
+                time.textContent = 'Just now';
+            }
+            contentDiv.appendChild(time);
+
+            msgDiv.appendChild(avatar);
+            msgDiv.appendChild(contentDiv);
+            
+            return msgDiv;
+        }
+
+        // Send Message
+        document.getElementById('btn-send-msg').addEventListener('click', async () => {
+            if (isSending) return;
+            
+            const input = document.getElementById('message-input');
+            const text = input.value.trim();
+            
+            if (!text && !pendingImageFile) {
+                showToast('Please enter a message or select an image');
+                return;
+            }
+            if (!currentRoomCode) {
+                showToast('Please join a room first');
+                return;
+            }
+            if (!currentUser) {
+                showToast('Please login first');
+                return;
+            }
+
+            isSending = true;
+            const sendBtn = document.getElementById('btn-send-msg');
+            sendBtn.disabled = true;
+            sendBtn.innerHTML = '<i class="fa-solid fa-spinner loading-spinner"></i>';
+
+            try {
+                const messageData = {
+                    uid: currentUser.uid,
+                    displayName: currentUser.displayName || 'Anonymous',
+                    photoURL: currentUser.photoURL || '',
+                    text: text || '',
+                    timestamp: serverTimestamp()
+                };
+
+                if (pendingImageFile) {
+                    const storageRef = ref(storage, `rooms/${currentRoomCode}/images/${Date.now()}_${pendingImageFile.name}`);
+                    await uploadBytes(storageRef, pendingImageFile);
+                    const downloadURL = await getDownloadURL(storageRef);
+                    messageData.imageURL = downloadURL;
+                    
+                    document.getElementById('image-preview-overlay').style.display = 'none';
+                    document.getElementById('preview-img').src = '';
+                    pendingImageFile = null;
+                }
+
+                await addDoc(collection(db, "rooms", currentRoomCode, "messages"), messageData);
+                input.value = '';
+                
+            } catch (error) {
+                console.error("Error sending message:", error);
+                showToast('Failed to send message. Please try again.');
+            } finally {
+                isSending = false;
+                sendBtn.disabled = false;
+                sendBtn.innerHTML = '<i class="fa-solid fa-paper-plane"></i>';
+            }
+        });
+
+        // Image Upload
+        document.getElementById('btn-trigger-upload').addEventListener('click', () => {
+            document.getElementById('image-upload-input').click();
+        });
+
+        document.getElementById('image-upload-input').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            if (!file.type.startsWith('image/')) {
+                showToast('Please select an image file.');
+                e.target.value = '';
+                return;
+            }
+
+            if (file.size > 5 * 1024 * 1024) {
+                showToast('Image size must be less than 5MB.');
+                e.target.value = '';
+                return;
+            }
+
+            pendingImageFile = file;
+            
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                document.getElementById('preview-img').src = e.target.result;
+                document.getElementById('preview-name').textContent = file.name;
+                document.getElementById('image-preview-overlay').style.display = 'flex';
+            };
+            reader.readAsDataURL(file);
+            
+            e.target.value = '';
+        });
+
+        document.getElementById('btn-cancel-upload').addEventListener('click', () => {
+            document.getElementById('image-preview-overlay').style.display = 'none';
+            document.getElementById('preview-img').src = '';
+            pendingImageFile = null;
+        });
+
+        document.getElementById('message-input').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                document.getElementById('btn-send-msg').click();
+            }
+        });
+
+        document.getElementById('btn-leave-room').addEventListener('click', () => {
+            if (confirm('Leave this room?')) {
+                if (unsubscribeMessages) {
+                    unsubscribeMessages();
+                    unsubscribeMessages = null;
+                }
+                currentRoomCode = null;
+                document.getElementById('chat-messages').innerHTML = '';
+                switchScreen('home');
+                showToast('Left the room');
+            }
+        });
+
+        document.getElementById('btn-copy-code').addEventListener('click', async () => {
+            const code = document.getElementById('display-room-code').textContent;
+            try {
+                await navigator.clipboard.writeText(code);
+                const btn = document.getElementById('btn-copy-code');
+                btn.innerHTML = '<i class="fa-solid fa-check"></i>';
+                showToast('Room code copied!');
+                setTimeout(() => {
+                    btn.innerHTML = '<i class="fa-regular fa-copy"></i>';
+                }, 2000);
+            } catch {
+                showToast('Copy manually: ' + code);
+            }
+        });
+
+        document.getElementById('join-room-code').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                document.getElementById('btn-join-room').click();
+            }
+        });
+
+        console.log('🚀 Nexus Chat App initialized successfully!');
+        console.log('📱 Ready for use');
+    </script>
+</body>
+</html>
